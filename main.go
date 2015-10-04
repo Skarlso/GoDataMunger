@@ -4,19 +4,21 @@ import (
 	"bufio"
 	"fmt"
 	"log"
+	"math"
 	"os"
+	"regexp"
 	"strconv"
 	"strings"
 )
 
 //MaxUint maximum integer stored for minimum seeking
-const MaxInt = int(^uint(0) >> 1)
+const MaxFloat = math.MaxFloat64
 
 //WeatherData which is Data
 type WeatherData struct {
 	columnName string
-	compareOne int
-	compareTwo int
+	compareOne float64
+	compareTwo float64
 }
 
 func main() {
@@ -27,17 +29,16 @@ func main() {
 //GetMinimumDiff gathers data from file to fill up Columns.
 func GetMinimumDiff() WeatherData {
 	wd := WeatherData{}
-	minimum := MaxInt
+	minimum := MaxFloat
 	readLines := ReadFile("weather.dat")
 	for _, value := range readLines {
-		valueArrays := strings.Split(value, " ")
-		valueArrays = cleanUp(valueArrays)
+		valueArrays := strings.Split(value, ",")
 		name := valueArrays[0]
-		if name == "Dy" || name == "mo" {
+		trimmedFirst, err := strconv.ParseFloat(strings.TrimSuffix(valueArrays[1], "*"), 64)
+		if err != nil {
 			continue
 		}
-		trimmedFirst, _ := strconv.Atoi(strings.TrimSuffix(valueArrays[1], "*"))
-		trimmedSecond, _ := strconv.Atoi(strings.TrimSuffix(valueArrays[2], "*"))
+		trimmedSecond, _ := strconv.ParseFloat(strings.TrimSuffix(valueArrays[2], "*"), 64)
 		if (trimmedFirst - trimmedSecond) <= minimum {
 			minimum = trimmedFirst - trimmedSecond
 			wd.columnName = name
@@ -49,17 +50,7 @@ func GetMinimumDiff() WeatherData {
 }
 
 func (wd WeatherData) String() string {
-	return fmt.Sprintf("Name: %s, Col1: %d, Col2: %d", wd.columnName, wd.compareOne, wd.compareTwo)
-}
-
-func cleanUp(s []string) (returnArr []string) {
-
-	for _, value := range s {
-		if value != "" {
-			returnArr = append(returnArr, value)
-		}
-	}
-	return
+	return fmt.Sprintf("Name: %s, Col1: %f, Col2: %f", wd.columnName, wd.compareOne, wd.compareTwo)
 }
 
 //ReadFile reads lines from a file and gives back a string array which contains the lines.
@@ -72,8 +63,11 @@ func ReadFile(fileName string) (fileLines []string) {
 
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
-		if len(scanner.Text()) > 0 {
-			fileLines = append(fileLines, scanner.Text())
+		line := scanner.Text()
+		if len(line) > 0 {
+			re := regexp.MustCompile("\\w+")
+			lines := re.FindAllString(line, -1)
+			fileLines = append(fileLines, strings.Join(lines, ","))
 		}
 	}
 
