@@ -35,9 +35,7 @@ func GetDataMinimumDiff(filename string, nameColumn int, compareColOne int, comp
 		trimmedFirst, _ := strconv.ParseFloat(valueArrays[compareColOne], 64)
 		trimmedSecond, _ := strconv.ParseFloat(valueArrays[compareColTwo], 64)
 		diff := trimmedFirst - trimmedSecond
-		if diff < 0 {
-			diff = diff * -1.0
-		}
+		diff = math.Abs(diff)
 		if diff <= minimum {
 			minimum = diff
 			data.columnName = name
