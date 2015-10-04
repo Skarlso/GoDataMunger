@@ -11,11 +11,8 @@ import (
 	"strings"
 )
 
-//MaxUint maximum integer stored for minimum seeking
-const MaxFloat = math.MaxFloat64
-
-//WeatherData which is Data
-type WeatherData struct {
+//Data which is Data
+type Data struct {
 	columnName string
 	compareOne float64
 	compareTwo float64
@@ -23,34 +20,32 @@ type WeatherData struct {
 
 func main() {
 	// datas := []Data{WeatherData{}, FootballData{}}
-	fmt.Println("Minimum weather data:", GetMinimumDiff())
+	fmt.Println("Minimum weather data:", GetDataMinimumDiff("weather.dat", 0, 1, 2))
+	fmt.Println("Minimum football data:", GetDataMinimumDiff("football.dat", 1, 6, 7))
 }
 
-//GetMinimumDiff gathers data from file to fill up Columns.
-func GetMinimumDiff() WeatherData {
-	wd := WeatherData{}
-	minimum := MaxFloat
-	readLines := ReadFile("weather.dat")
+//GetDataMinimumDiff gathers data from file to fill up Columns.
+func GetDataMinimumDiff(filename string, nameColumn int, compareColOne int, compareColTwo int) Data {
+	data := Data{}
+	minimum := math.MaxFloat64
+	readLines := ReadFile(filename)
 	for _, value := range readLines {
 		valueArrays := strings.Split(value, ",")
-		name := valueArrays[0]
-		trimmedFirst, err := strconv.ParseFloat(strings.TrimSuffix(valueArrays[1], "*"), 64)
-		if err != nil {
-			continue
+		name := valueArrays[nameColumn]
+		trimmedFirst, _ := strconv.ParseFloat(valueArrays[compareColOne], 64)
+		trimmedSecond, _ := strconv.ParseFloat(valueArrays[compareColTwo], 64)
+		diff := trimmedFirst - trimmedSecond
+		if diff < 0 {
+			diff = diff * -1.0
 		}
-		trimmedSecond, _ := strconv.ParseFloat(strings.TrimSuffix(valueArrays[2], "*"), 64)
-		if (trimmedFirst - trimmedSecond) <= minimum {
-			minimum = trimmedFirst - trimmedSecond
-			wd.columnName = name
-			wd.compareOne = trimmedFirst
-			wd.compareTwo = trimmedSecond
+		if diff <= minimum {
+			minimum = diff
+			data.columnName = name
+			data.compareOne = trimmedFirst
+			data.compareTwo = trimmedSecond
 		}
 	}
-	return wd
-}
-
-func (wd WeatherData) String() string {
-	return fmt.Sprintf("Name: %s, Col1: %f, Col2: %f", wd.columnName, wd.compareOne, wd.compareTwo)
+	return data
 }
 
 //ReadFile reads lines from a file and gives back a string array which contains the lines.
@@ -62,11 +57,13 @@ func ReadFile(fileName string) (fileLines []string) {
 	defer file.Close()
 
 	scanner := bufio.NewScanner(file)
+	//Skipping the first line which is the header.
+	scanner.Scan()
 	for scanner.Scan() {
 		line := scanner.Text()
-		if len(line) > 0 {
-			re := regexp.MustCompile("\\w+")
-			lines := re.FindAllString(line, -1)
+		re := regexp.MustCompile("\\w+")
+		lines := re.FindAllString(line, -1)
+		if len(lines) > 0 {
 			fileLines = append(fileLines, strings.Join(lines, ","))
 		}
 	}
